@@ -59,6 +59,7 @@ public class AllocationBenchmark {
     // need its own main method and we cannot execute more than one class with a main method per JAR.
     @Param({
         // indices| shards| replicas| nodes
+
         "       10|      1|        0|     1",
         "       10|      3|        0|     1",
         "       10|     10|        0|     1",
@@ -86,6 +87,13 @@ public class AllocationBenchmark {
         "      100|      1|        2|    10",
         "      100|      3|        2|    10",
         "      100|     10|        2|    10",
+        
+        "       10|      1|        1|    20",
+        "       10|      3|        1|    20",
+        "       10|     10|        1|    20",
+        "      100|      1|        1|    20",
+        "      100|      3|        1|    20",
+        "      100|     10|        1|    20",
 
         "       10|      1|        0|    50",
         "       10|      3|        0|    50",
@@ -106,7 +114,11 @@ public class AllocationBenchmark {
         "       10|     10|        2|    50",
         "      100|      1|        2|    50",
         "      100|      3|        2|    50",
-        "      100|     10|        2|    50"
+        "      100|     10|        2|    50",
+        
+        "       50|     60|        1|    200",
+        "      500|     60|        1|    400"
+
     })
     public String indicesShardsReplicasNodes = "10|1|0|1";
 
