@@ -250,17 +250,65 @@ public class AllocationDeciders extends AllocationDecider {
                     logger.trace("Pre-emptively returning decision [{}] from decider [{}] for node [{}]", throttlingDecision.type(),
                     decider.getClass().getSimpleName(), node.nodeId());
                 }
-                return Decision.THROTTLE;
+                return Decision.YES;
             }
         }
-        for (AllocationDecider decider : allocations) {
+        /*for (AllocationDecider decider : allocations) {
             decision = decider.canRemainOnNode(node, allocation);
             if (decision == Decision.NO)
                 break;
-        }
+        }*/
         if (logger.isTraceEnabled()) {
             logger.trace("Returning decision after iterating all the deciders best decision [{}] for node [{}]", decision.type(),
             node.nodeId());
+        }
+        return decision;
+    }
+    
+    @Override
+    public Decision canAllocateAnyShardToNode(RoutingNode node, RoutingAllocation allocation) {
+        Decision decision = Decision.ALWAYS;
+        for (AllocationDecider decider : allocations) {
+            decision = decider.canAllocateAnyShardToNode(node, allocation);
+            if (decision == Decision.NO) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Pre-emptively returning decision [{}] from decider [{}] for node [{}]", decision.type(),
+                    decider.getClass().getSimpleName(), node.nodeId());
+                }
+                return decision;
+            }
+        }
+        return decision;
+    }
+    
+    @Override
+    public Decision canMoveAway(ShardRouting shardRouting, RoutingAllocation allocation) {
+        Decision decision = Decision.ALWAYS;
+        for (AllocationDecider decider : allocations) {
+            decision = decider.canMoveAway(shardRouting, allocation);
+            if (decision == Decision.NO) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Pre-emptively returning decision [{}] from decider [{}] for shard [{}]", decision.type(),
+                    decider.getClass().getSimpleName(), shardRouting);
+                }
+                return decision;
+            }
+        }
+        return decision;
+    }
+    
+    @Override
+    public Decision canRemain(RoutingAllocation allocation) {
+        Decision decision = Decision.ALWAYS;
+        for (AllocationDecider decider : allocations) {
+            decision = decider.canRemain(allocation);
+            if (decision == Decision.YES) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Pre-emptively returning decision [{}] from decider [{}]", decision.type(),
+                    decider.getClass().getSimpleName());
+                }
+                return decision;
+            }
         }
         return decision;
     }

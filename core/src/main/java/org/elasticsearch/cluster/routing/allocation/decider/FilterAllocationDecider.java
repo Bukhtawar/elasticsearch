@@ -195,6 +195,11 @@ public class FilterAllocationDecider extends AllocationDecider {
 
         return allocation.decision(Decision.YES, NAME, "node passes include/exclude/require filters");
     }
+    
+    @Override
+    public Decision canAllocateAnyShardToNode(RoutingNode node, RoutingAllocation allocation) {
+        return canRemainOnNode(node, allocation);
+    }
 
     private Decision shouldIndexNodeFilter(RoutingNode node, RoutingAllocation allocation) {
         Decision decision = null;
