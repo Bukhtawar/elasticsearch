@@ -210,4 +210,9 @@ public class ShardsLimitAllocationDecider extends AllocationDecider {
             "the shard count [%d] for this node is under the cluster level node limit [%d]",
             nodeShardCount, clusterShardLimit);
     }
+    
+    @Override
+    public Decision canAllocateAnyShardToNode(RoutingNode node, RoutingAllocation allocation) {
+        return canAllocate(node, allocation);
+    }
 }

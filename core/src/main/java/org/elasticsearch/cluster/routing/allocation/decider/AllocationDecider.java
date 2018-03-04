@@ -74,6 +74,14 @@ public abstract class AllocationDecider extends AbstractComponent {
     public Decision canAllocate(ShardRouting shardRouting, RoutingAllocation allocation) {
         return Decision.ALWAYS;
     }
+    
+    /**
+     * Returns a {@link Decision} whether the given shard can be moved away from the current node
+     * {@link RoutingAllocation}. The default is {@link Decision#ALWAYS}.
+     */
+    public Decision canMoveAway(ShardRouting shardRouting, RoutingAllocation allocation) {
+        return Decision.ALWAYS;
+    }
 
     /**
      * Returns a {@link Decision} whether the given shard routing can be allocated at all at this state of the
@@ -120,6 +128,17 @@ public abstract class AllocationDecider extends AbstractComponent {
     public Decision canMoveAnyShardFromNode(RoutingNode node, RoutingAllocation allocation) {
         return Decision.ALWAYS;
     }
+    
+    /**
+     * Returns a {@link Decision} whether any shard on the given
+     * {@link RoutingNode}} can be allocated The default is {@link Decision#ALWAYS}.
+     * All implementations that override this behaviour must take a
+     * {@link Decision}} whether or not to skip iterating over the remaining
+     * deciders for this node.
+     */
+    public Decision canAllocateAnyShardToNode(RoutingNode node, RoutingAllocation allocation) {
+        return Decision.ALWAYS;
+    }
 
     /**
      * Returns a {@link Decision} whether the given primary shard can be
@@ -145,5 +164,9 @@ public abstract class AllocationDecider extends AbstractComponent {
             // On a THROTTLE/YES decision, we use the same decision instead of forcing allocation
             return decision;
         }
+    }
+
+    public Decision canRemain(RoutingAllocation allocation) {
+        return Decision.ALWAYS;
     }
 }

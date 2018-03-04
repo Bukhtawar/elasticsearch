@@ -136,12 +136,13 @@ public class RoutingNode implements Iterable<ShardRouting> {
             c.remove(oldShard);
             return c;
         });
-        shardPerIndex.computeIfPresent(oldShard.index(), (k, c) -> {
+        Set<ShardRouting> shardRouting = shardPerIndex.computeIfPresent(oldShard.index(), (k, c) -> {
             c.remove(oldShard);
-            if (c.isEmpty())
-                shardPerIndex.remove(oldShard.index());
             return c;
         });
+        if(shardRouting.isEmpty()) {
+            shardPerIndex.remove(oldShard.index());
+        }
         shardPerState.computeIfAbsent(newShard.state(), k -> new HashSet<>()).add(newShard);
         shardPerIndex.computeIfAbsent(newShard.index(), k -> new HashSet<>()).add(newShard);
         ShardRouting previousValue = shards.put(newShard.shardId(), newShard);
@@ -155,12 +156,13 @@ public class RoutingNode implements Iterable<ShardRouting> {
             c.remove(previousValue);
             return c.isEmpty() ? null : c;
         });
-        shardPerIndex.computeIfPresent(shard.index(), (k, c) -> {
+        Set<ShardRouting> shardRouting = shardPerIndex.computeIfPresent(shard.index(), (k, c) -> {
             c.remove(previousValue);
-            if (c.isEmpty())
-                shardPerIndex.remove(shard.index());
             return c;
         });
+        if(shardRouting.isEmpty()) {
+            shardPerIndex.remove(shard.index());
+        }
     }
 
     /**

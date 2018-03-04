@@ -90,6 +90,7 @@ public class BalancedShardsAllocator extends AbstractComponent implements Shards
 
     private volatile WeightFunction weightFunction;
     private volatile float threshold;
+    private Balancer balancer;
 
     public BalancedShardsAllocator(Settings settings) {
         this(settings, new ClusterSettings(settings, ClusterSettings.BUILT_IN_CLUSTER_SETTINGS));
@@ -118,10 +119,18 @@ public class BalancedShardsAllocator extends AbstractComponent implements Shards
             /* with no nodes this is pointless */
             return;
         }
-        final Balancer balancer = new Balancer(logger, allocation, weightFunction, threshold);
+        balancer = new Balancer(logger, allocation, weightFunction, threshold);
         balancer.allocateUnassigned();
         balancer.moveShards();
         balancer.balance();
+    }
+    
+    public Set<RoutingNode> removedSourceNodes(){
+        return balancer.removedSourceNode;
+    }
+    
+    public Set<RoutingNode> inEligibleTargetNode(){
+        return balancer.inEligibleTargetNode;
     }
 
     @Override
@@ -238,6 +247,9 @@ public class BalancedShardsAllocator extends AbstractComponent implements Shards
         private final MetaData metaData;
         private final float avgShardsPerNode;
         private final NodeSorter sorter;
+        private final Set<RoutingNode> inEligibleTargetNode;
+        private final Set<RoutingNode> removedSourceNode;
+        
 
         public Balancer(Logger logger, RoutingAllocation allocation, WeightFunction weight, float threshold) {
             this.logger = logger;
@@ -249,6 +261,8 @@ public class BalancedShardsAllocator extends AbstractComponent implements Shards
             avgShardsPerNode = ((float) metaData.getTotalNumberOfShards()) / routingNodes.size();
             nodes = Collections.unmodifiableMap(buildModelFromAssigned());
             sorter = newNodeSorter();
+            inEligibleTargetNode = new HashSet<>();
+            removedSourceNode = new HashSet<>();
         }
 
         /**
@@ -652,6 +666,8 @@ public class BalancedShardsAllocator extends AbstractComponent implements Shards
                     it.remove();
                     continue;
                 }
+                if(sorter.modelNodes.length == inEligibleTargetNode.size())
+                    return;
                 final MoveDecision moveDecision = decideMove(shardRouting);
                 if (moveDecision.isDecisionTaken() && moveDecision.forceMove()) {
                     final ModelNode sourceNode = nodes.get(shardRouting.currentNodeId());
@@ -708,9 +724,14 @@ public class BalancedShardsAllocator extends AbstractComponent implements Shards
             final List<NodeAllocationResult> nodeExplanationMap = explain ? new ArrayList<>() : null;
             int weightRanking = 0;
             for (ModelNode currentNode : sorter.modelNodes) {
-                if (currentNode != sourceNode) {
+                if (currentNode != sourceNode && !inEligibleTargetNode.contains(currentNode.getRoutingNode())) {
                     RoutingNode target = currentNode.getRoutingNode();
                     // don't use canRebalance as we want hard filtering rules to apply. See #17698
+                    Decision nodeLevelAllocationDecision = allocation.deciders().canAllocateAnyShardToNode(target, allocation);
+                    if (nodeLevelAllocationDecision == Decision.NO) {
+                        inEligibleTargetNode.add(currentNode.getRoutingNode());
+                        continue;
+                    }
                     Decision allocationDecision = allocation.deciders().canAllocate(shardRouting, target, allocation);
                     if (explain) {
                         nodeExplanationMap.add(new NodeAllocationResult(
